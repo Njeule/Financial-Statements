@@ -50,6 +50,17 @@ function resetViewState() {
   state.view = "overview";
 }
 
+function returnHome() {
+  resetViewState();
+  state.accounts = [];
+  state.ledger = [];
+  state.controls = null;
+  state.dataLoaded = false;
+  state.uploadOpen = true;
+  state.uploadError = "";
+  render();
+}
+
 const currency = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -866,13 +877,13 @@ function activeFilterChips() {
 function header() {
   return `
     <header class="top">
-      <div class="brand">
+      <button class="brand" data-home title="Return to upload home">
         <span class="brand-mark">FS</span>
         <div>
           <h1>CFO Financial Statements</h1>
           <p>${escapeHtml(reportSubtitle())}</p>
         </div>
-      </div>
+      </button>
       <nav class="tabs">
         ${tabs
           .map(
@@ -905,8 +916,8 @@ function header() {
         <button class="download-button" data-refresh-from-upload>Generate report</button>
         <button class="download-button secondary" data-export-report-data>Export report-data.json</button>
         <div class="example-actions">
-          <button data-load-example="simple">Use simple example</button>
-          <button data-load-example="rich">Use rich example</button>
+          <button data-load-example="simple">Load Starter Dataset</button>
+          <button data-load-example="rich">Load Full Demo Dataset</button>
         </div>
       </section>
     </header>`;
@@ -1371,13 +1382,13 @@ function emptyState() {
       <p>No default figures are loaded. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
       <div class="empty-actions">
         <button class="download-button" data-empty-upload>${icon("download")} Upload your CSVs</button>
-        <button class="download-button secondary" data-load-example="simple">Use simple example</button>
-        <button class="download-button secondary" data-load-example="rich">Use rich example</button>
+        <button class="download-button secondary" data-load-example="simple">Load Starter Dataset</button>
+        <button class="download-button secondary" data-load-example="rich">Load Full Demo Dataset</button>
       </div>
       <div class="empty-steps">
-        <div><span>1</span><p>Open Upload CSVs in the header.</p></div>
-        <div><span>2</span><p>Select ChartOfAccounts.csv and Transactions.csv.</p></div>
-        <div><span>3</span><p>Generate the report. The data is processed in this browser session.</p></div>
+        <div><span>1</span><p>Upload your own files or load an example dataset.</p></div>
+        <div><span>2</span><p>Use the starter dataset for a quick check or the full demo for a richer model.</p></div>
+        <div><span>3</span><p>Generate the report. Uploaded data is processed in this browser session.</p></div>
       </div>
     </section>
   </main>`;
@@ -1553,6 +1564,7 @@ function downloadRows(rows, filename) {
 }
 
 function bindEvents() {
+  document.querySelector("[data-home]")?.addEventListener("click", returnHome);
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       state.view = button.dataset.view;

@@ -48,7 +48,15 @@ button {
   align-items: center;
   gap: 14px;
   min-width: 286px;
+  border: 0;
+  background: transparent;
+  color: inherit;
   padding: 12px 18px 8px;
+  text-align: left;
+}
+
+.brand:hover {
+  background: rgba(15, 139, 141, 0.07);
 }
 
 .brand-mark {
