@@ -916,8 +916,8 @@ function header() {
         <button class="download-button" data-refresh-from-upload>Generate report</button>
         <button class="download-button secondary" data-export-report-data>Download report file</button>
         <div class="example-actions">
-          <button data-load-example="simple">Load Example Dataset 1</button>
-          <button data-load-example="rich">Load Example Dataset 2</button>
+          <button class="example-btn example-one" data-load-example="simple"><strong>Load Example Dataset 1</strong><span>Basic sample</span></button>
+          <button class="example-btn example-two" data-load-example="rich"><strong>Load Example Dataset 2</strong><span>Expanded sample</span></button>
         </div>
       </section>
     </header>`;
@@ -1382,8 +1382,8 @@ function emptyState() {
       <p>No report data is loaded yet. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
       <div class="empty-actions">
         <button class="download-button" data-empty-upload>${icon("download")} Upload your CSVs</button>
-        <button class="download-button secondary" data-load-example="simple">Load Example Dataset 1</button>
-        <button class="download-button secondary" data-load-example="rich">Load Example Dataset 2</button>
+        <button class="example-btn example-one" data-load-example="simple"><strong>Load Example Dataset 1</strong><span>Basic sample</span></button>
+        <button class="example-btn example-two" data-load-example="rich"><strong>Load Example Dataset 2</strong><span>Expanded sample</span></button>
       </div>
       <div class="empty-steps">
         <div><span>1</span><p>Upload your own files or load an example dataset.</p></div>

@@ -242,17 +242,45 @@ p {
   gap: 8px;
 }
 
-.example-actions button {
-  min-height: 36px;
+.example-btn {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 190px;
+  min-height: 48px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #fff;
   color: #172033;
-  padding: 0 10px;
+  padding: 7px 12px;
+  text-align: left;
 }
 
-.example-actions button:hover,
-.empty-actions button:hover {
+.example-btn strong {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.example-btn span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.example-one {
+  border-color: #c7d2fe;
+  background: #f8f9ff;
+}
+
+.example-two {
+  border-color: #bae6fd;
+  background: #f3fbff;
+}
+
+.example-btn:hover,
+.empty-actions .download-button:hover {
   border-color: #0f8b8d;
   box-shadow: 0 0 0 3px rgba(15, 139, 141, 0.12);
 }
