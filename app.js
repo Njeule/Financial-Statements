@@ -50,6 +50,21 @@ function resetViewState() {
   state.view = "overview";
 }
 
+function focusUploadPanel(openPicker = false) {
+  state.uploadOpen = true;
+  render();
+  window.setTimeout(() => {
+    const panel = document.querySelector("[data-upload-panel]");
+    const input = document.querySelector("[data-coa-file]");
+    panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (openPicker && input) {
+      input.click();
+    } else {
+      input?.focus();
+    }
+  }, 0);
+}
+
 function returnHome() {
   resetViewState();
   state.accounts = [];
@@ -1600,12 +1615,15 @@ function bindEvents() {
     render();
   });
   document.querySelector("[data-upload-toggle]")?.addEventListener("click", () => {
-    state.uploadOpen = !state.uploadOpen;
-    render();
+    if (state.uploadOpen) {
+      state.uploadOpen = false;
+      render();
+    } else {
+      focusUploadPanel(false);
+    }
   });
   document.querySelector("[data-empty-upload]")?.addEventListener("click", () => {
-    state.uploadOpen = true;
-    render();
+    focusUploadPanel(true);
   });
   document.querySelectorAll("[data-load-example]").forEach((button) => {
     button.addEventListener("click", () => loadExample(button.dataset.loadExample));
