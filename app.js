@@ -916,8 +916,8 @@ function header() {
         <button class="download-button" data-refresh-from-upload>Generate report</button>
         <button class="download-button secondary" data-export-report-data>Export report-data.json</button>
         <div class="example-actions">
-          <button data-load-example="simple">Load Starter Dataset</button>
-          <button data-load-example="rich">Load Full Demo Dataset</button>
+          <button data-load-example="simple">Load Example Dataset 1</button>
+          <button data-load-example="rich">Load Example Dataset 2</button>
         </div>
       </section>
     </header>`;
@@ -1382,12 +1382,12 @@ function emptyState() {
       <p>No default figures are loaded. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
       <div class="empty-actions">
         <button class="download-button" data-empty-upload>${icon("download")} Upload your CSVs</button>
-        <button class="download-button secondary" data-load-example="simple">Load Starter Dataset</button>
-        <button class="download-button secondary" data-load-example="rich">Load Full Demo Dataset</button>
+        <button class="download-button secondary" data-load-example="simple">Load Example Dataset 1</button>
+        <button class="download-button secondary" data-load-example="rich">Load Example Dataset 2</button>
       </div>
       <div class="empty-steps">
         <div><span>1</span><p>Upload your own files or load an example dataset.</p></div>
-        <div><span>2</span><p>Use the starter dataset for a quick check or the full demo for a richer model.</p></div>
+        <div><span>2</span><p>Use either example dataset to explore the same upload format.</p></div>
         <div><span>3</span><p>Generate the report. Uploaded data is processed in this browser session.</p></div>
       </div>
     </section>
