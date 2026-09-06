@@ -2,7 +2,9 @@
 
 ## Recommended Deployment Mode
 
-Use the generated `report-data.json` file online. Do not upload the raw CSV files unless the site is protected behind authentication.
+Deploy the app without raw CSV files and without a default `report-data.json` if you do not want static figures visible online.
+
+The deployed dashboard starts blank and asks the user to upload the CSV files in the browser.
 
 ## Generate Deployment Data
 
@@ -29,7 +31,6 @@ For a static hosting deployment, upload:
 - `index.html`
 - `app.js`
 - `styles.css`
-- `report-data.json`
 
 ## Do Not Upload These Files Publicly
 
@@ -37,10 +38,11 @@ Keep these private unless the deployment is protected by login/auth:
 
 - `Transactions.csv`
 - `ChartOfAccounts.csv`
+- `report-data.json`, unless you intentionally want default figures shown before upload
 
 ## Local Development
 
-The app tries to load `report-data.json` first. If it is missing, it falls back to the raw CSV files for local development.
+The app starts blank and waits for uploaded CSVs.
 
 Run locally:
 
@@ -67,6 +69,12 @@ Use it to:
 The report refreshes immediately in the browser. The uploaded CSV contents are processed locally in the browser session and are not uploaded to a server by this static app.
 
 After reviewing the refreshed dashboard, click `Export report-data.json`. Replace the hosted `report-data.json` with that downloaded file to update the online dashboard without publishing the raw CSVs.
+
+If you intentionally want to test with the generated JSON locally or in a private environment, open the app with:
+
+```text
+?demo=1
+```
 
 ## Security Note
 

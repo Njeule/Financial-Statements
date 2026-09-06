@@ -94,7 +94,8 @@ const state = {
   controls: null,
   dataMode: "csv",
   uploadError: "",
-  uploadOpen: false,
+  uploadOpen: true,
+  dataLoaded: false,
   uploadedFiles: {
     accountsRaw: "",
     transactionsRaw: ""
@@ -536,6 +537,7 @@ function loadData(accountsRaw, transactionsRaw) {
   state.ledger = ledger;
   state.controls = null;
   state.dataMode = "csv";
+  state.dataLoaded = true;
   state.options = {
     months: [...new Set(ledger.map((row) => row.month))].sort(),
     categories: [...new Set(ledger.map((row) => row.category))].sort(),
@@ -691,6 +693,7 @@ function loadReportData(reportData) {
   state.ledger = ledger;
   state.controls = reportData.controls;
   state.dataMode = reportData.privacy?.mode ?? "json";
+  state.dataLoaded = true;
   state.options = {
     months: [...new Set(ledger.map((row) => row.month))].sort(),
     categories: [...new Set(ledger.map((row) => row.category))].sort(),
@@ -1345,7 +1348,22 @@ function ledgerView(rows) {
   </section>`;
 }
 
+function emptyState() {
+  return `<main>
+    <section class="empty-report">
+      <strong>Upload CSVs to generate the financial statements</strong>
+      <p>No default figures are loaded. Select the chart of accounts and transaction CSV files, then click Generate report.</p>
+      <div class="empty-steps">
+        <div><span>1</span><p>Open Upload CSVs in the header.</p></div>
+        <div><span>2</span><p>Select ChartOfAccounts.csv and Transactions.csv.</p></div>
+        <div><span>3</span><p>Generate the report. The data is processed in this browser session.</p></div>
+      </div>
+    </section>
+  </main>`;
+}
+
 function body(rows) {
+  if (!state.dataLoaded) return emptyState();
   const m = metrics(rows);
   const checks = integrityChecks();
   const content = {
@@ -1458,7 +1476,7 @@ async function refreshFromUpload() {
     const reportData = buildReportDataFromCsv(accountsRaw, transactionsRaw);
     loadReportData(reportData);
     resetViewState();
-    state.uploadOpen = true;
+    state.uploadOpen = false;
     render();
   } catch (error) {
     state.uploadError = error.message;
@@ -1603,15 +1621,13 @@ function bindEvents() {
 
 async function init() {
   try {
-    const reportResponse = await fetch("./report-data.json", { cache: "no-store" });
-    if (reportResponse.ok) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") === "1") {
+      const reportResponse = await fetch("./report-data.json", { cache: "no-store" });
+      if (!reportResponse.ok) throw new Error("Demo report-data.json was not found.");
       loadReportData(await reportResponse.json());
-    } else {
-      const [accountsRaw, transactionsRaw] = await Promise.all([
-        fetch("./ChartOfAccounts.csv").then((response) => response.text()),
-        fetch("./Transactions.csv").then((response) => response.text())
-      ]);
-      loadData(accountsRaw, transactionsRaw);
+    } else if (window.location.protocol === "file:") {
+      state.uploadError = "Open this app through the local server or deployment URL before uploading CSVs.";
     }
     render();
   } catch (error) {
