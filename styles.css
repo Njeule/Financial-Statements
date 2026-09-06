@@ -539,6 +539,101 @@ section {
   overflow-wrap: anywhere;
 }
 
+.bridge-panel,
+.variance-panel {
+  min-height: 0;
+}
+
+.bridge-flow {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 28px minmax(130px, 1fr) 28px minmax(130px, 1fr) 28px minmax(130px, 1fr) 28px minmax(130px, 1fr);
+  align-items: stretch;
+  gap: 8px;
+}
+
+.bridge-step {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 118px;
+  border: 1px solid #d9e1ea;
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+  text-align: left;
+}
+
+.bridge-step.subtotal {
+  background: #f8fafc;
+}
+
+.bridge-step span,
+.variance-card span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.bridge-step strong {
+  color: #172033;
+  font-size: 21px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.bridge-step i {
+  display: block;
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eef5;
+}
+
+.bridge-step b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.bridge-operator {
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.variance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.variance-card {
+  min-height: 94px;
+  border: 1px solid #d9e1ea;
+  border-left: 5px solid #0f8b8d;
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+}
+
+.variance-card strong {
+  display: block;
+  margin: 7px 0 5px;
+  color: #172033;
+  font-size: 23px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.variance-card small {
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
 .ratio-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -924,10 +1019,15 @@ td span {
   .split,
   .ratio-grid,
   .ratio-strip,
+  .bridge-flow,
   .recon-grid,
   .drill-summary,
   .exception-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bridge-operator {
+    display: none;
   }
 }
 
@@ -953,6 +1053,8 @@ td span {
   .split,
   .ratio-grid,
   .ratio-strip,
+  .bridge-flow,
+  .variance-grid,
   .recon-grid,
   .drill-summary,
   .exception-grid,

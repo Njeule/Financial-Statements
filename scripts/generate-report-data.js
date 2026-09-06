@@ -45,6 +45,8 @@ const parseDate = (value) => {
 };
 
 const monthStartLabel = (month) => `01/${month.slice(5, 7)}/${month.slice(0, 4)}`;
+const readableMonth = (month) =>
+  new Date(`${month}-01T00:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
 const accountsRaw = await readFile("ChartOfAccounts.csv", "utf8");
 const transactionsRaw = await readFile("Transactions.csv", "utf8");
@@ -111,7 +113,7 @@ const summarizedLedger = Array.from(summary.values())
     accountNumber: row.accountNumber,
     type: row.type,
     amount: Number(row.amount.toFixed(2)),
-    description: `Monthly summarized ${row.type.toLowerCase()} activity (${row.sourceLineCount} source lines)`,
+    description: `${readableMonth(row.month)} summarized ${row.type.toLowerCase()}s for ${accountMap.get(row.accountNumber)?.accountName ?? row.accountNumber} (${row.sourceLineCount} source lines)`,
     sourceLineCount: row.sourceLineCount
   }));
 

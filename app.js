@@ -554,6 +554,11 @@ function monthStartLabel(month) {
   return `01/${month.slice(5, 7)}/${month.slice(0, 4)}`;
 }
 
+function readableMonth(month) {
+  const date = new Date(`${month}-01T00:00:00`);
+  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+
 function requireColumns(rows, columns, fileName) {
   if (!rows.length) throw new Error(`${fileName} is empty.`);
   const missing = columns.filter((column) => !(column in rows[0]));
@@ -628,7 +633,7 @@ function buildReportDataFromCsv(accountsRaw, transactionsRaw) {
       accountNumber: row.accountNumber,
       type: row.type,
       amount: Number(row.amount.toFixed(2)),
-      description: `Monthly summarized ${row.type.toLowerCase()} activity (${row.sourceLineCount} source lines)`,
+      description: `${readableMonth(row.month)} summarized ${row.type.toLowerCase()}s for ${accountMap.get(row.accountNumber)?.accountName ?? row.accountNumber} (${row.sourceLineCount} source lines)`,
       sourceLineCount: row.sourceLineCount
     }));
   const dates = sourceLedger.map((row) => row.date).sort((a, b) => a - b);
@@ -1021,7 +1026,7 @@ function ledgerTable(rows, compact = false) {
           <th>Transaction</th>
           <th>Account</th>
           <th>Category</th>
-          <th>Published detail</th>
+          <th>Activity summary</th>
           <th>Amount</th>
         </tr>
       </thead>
@@ -1141,34 +1146,28 @@ function enhancedDrilldown(rows) {
 function profitBridge(rows) {
   const m = metrics(rows);
   const steps = [
-    { label: "Revenue", value: m.revenue, color: COLORS.revenue, category: "Revenue" },
-    { label: "COGS", value: -m.cogs, color: COLORS.expense, subcategory: "Cost of Goods Sold" },
-    { label: "Gross Profit", value: m.grossProfit, color: COLORS.profit },
-    { label: "Opex", value: -m.opex, color: COLORS.loss, subcategory: "Operating Expenses" },
-    { label: "Operating Result", value: m.ebit, color: m.ebit < 0 ? COLORS.loss : COLORS.profit }
+    { label: "Revenue", value: m.revenue, color: COLORS.revenue, type: "positive", category: "Revenue" },
+    { label: "COGS", value: -m.cogs, color: COLORS.expense, type: "negative", subcategory: "Cost of Goods Sold" },
+    { label: "Gross Profit", value: m.grossProfit, color: COLORS.profit, type: "subtotal" },
+    { label: "Opex", value: -m.opex, color: COLORS.loss, type: "negative", subcategory: "Operating Expenses" },
+    { label: "Operating Result", value: m.ebit, color: m.ebit < 0 ? COLORS.loss : COLORS.profit, type: "subtotal" }
   ];
-  const width = 960;
-  const height = 245;
-  const pad = { left: 58, right: 24, top: 26, bottom: 52 };
   const max = Math.max(1, ...steps.map((step) => Math.abs(step.value)));
-  const baseY = height - pad.bottom;
-  const barWidth = (width - pad.left - pad.right) / steps.length - 28;
-  return `<section class="chart bridge">
+  return `<section class="bridge-panel">
     <div class="section-title"><h2>${icon("bars")} Profit Bridge</h2><p>Revenue to operating result</p></div>
-    <svg class="data-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Profit bridge">
-      <line class="grid-line" x1="${pad.left}" y1="${baseY}" x2="${width - pad.right}" y2="${baseY}"></line>
+    <div class="bridge-flow">
       ${steps
-        .map((step, index) => {
-          const x = pad.left + index * (barWidth + 28);
-          const h = (Math.abs(step.value) / max) * (height - pad.top - pad.bottom);
-          const y = step.value >= 0 ? baseY - h : baseY;
-          return `
-            <rect class="bar" data-drill-category="${escapeHtml(step.category ?? "")}" data-drill-subcategory="${escapeHtml(step.subcategory ?? "")}" data-drill-label="${escapeHtml(step.label)}" x="${x}" y="${y}" width="${barWidth}" height="${Math.max(2, h)}" rx="5" fill="${step.color}"><title>${escapeHtml(step.label)}: ${fmtMoney(step.value)}</title></rect>
-            <text class="tick" x="${x + barWidth / 2}" y="${height - 20}" text-anchor="middle">${escapeHtml(step.label)}</text>
-            <text class="tick" x="${x + barWidth / 2}" y="${step.value >= 0 ? y - 7 : y + h + 15}" text-anchor="middle">${fmtCompact(step.value)}</text>`;
-        })
+        .map(
+          (step, index) => `
+          <button class="bridge-step ${step.type}" data-drill-category="${escapeHtml(step.category ?? "")}" data-drill-subcategory="${escapeHtml(step.subcategory ?? "")}" data-drill-label="${escapeHtml(step.label)}">
+            <span>${escapeHtml(step.label)}</span>
+            <strong class="${step.value < 0 ? "negative" : ""}">${fmtMoney(step.value)}</strong>
+            <i><b style="width:${Math.max(10, (Math.abs(step.value) / max) * 100)}%; background:${step.color}"></b></i>
+          </button>
+          ${index < steps.length - 1 ? `<div class="bridge-operator">${steps[index + 1].type === "negative" ? "-" : "="}</div>` : ""}`
+        )
         .join("")}
-    </svg>
+    </div>
   </section>`;
 }
 
@@ -1197,15 +1196,15 @@ function exceptionCards(rows) {
 function varianceCards(rows) {
   const variance = monthlyVariance(rows);
   const cards = [
-    ["Best revenue month", monthLabel(variance.bestRevenue?.month), variance.bestRevenue ? fmtMoney(variance.bestRevenue.revenue) : "n/a"],
-    ["Worst EBIT month", monthLabel(variance.worstEbit?.month), variance.worstEbit ? fmtMoney(variance.worstEbit.ebit) : "n/a"],
-    ["Revenue run-rate", fmtMoney(variance.revenueRunRate), `MoM ${fmtMoney(variance.revenueMoM)}`],
-    ["EBIT volatility", fmtMoney(variance.ebitSpread), `MoM ${fmtMoney(variance.ebitMoM)}`]
+    ["Best revenue month", monthLabel(variance.bestRevenue?.month), variance.bestRevenue ? fmtMoney(variance.bestRevenue.revenue) : "n/a", COLORS.revenue],
+    ["Worst EBIT month", monthLabel(variance.worstEbit?.month), variance.worstEbit ? fmtMoney(variance.worstEbit.ebit) : "n/a", COLORS.loss],
+    ["Revenue run-rate", fmtMoney(variance.revenueRunRate), `MoM ${fmtMoney(variance.revenueMoM)}`, COLORS.revenue],
+    ["EBIT volatility", fmtMoney(variance.ebitSpread), `MoM ${fmtMoney(variance.ebitMoM)}`, COLORS.loss]
   ];
-  return `<section>
+  return `<section class="variance-panel">
     <div class="section-title"><h2>${icon("activity")} Monthly Variance</h2><p>Run-rate and volatility</p></div>
-    <div class="ratio-strip">
-      ${cards.map(([label, value, meta]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(meta)}</small></div>`).join("")}
+    <div class="variance-grid">
+      ${cards.map(([label, value, meta, color]) => `<article class="variance-card" style="border-left-color:${color}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(meta)}</small></article>`).join("")}
     </div>
   </section>`;
 }
@@ -1490,7 +1489,7 @@ async function refreshFromUpload() {
 }
 
 function downloadRows(rows, filename) {
-  const headers = ["Date", "PublishedID", "AccountNumber", "AccountName", "Category", "PublishedDetail", "Amount"];
+  const headers = ["Date", "PublishedID", "AccountNumber", "AccountName", "Category", "ActivitySummary", "Amount"];
   const csv = [
     headers.join(","),
     ...rows.map((row) =>
