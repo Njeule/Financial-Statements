@@ -1,0 +1,12 @@
+{
+  "name": "fs-reports-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 5173 --bind 127.0.0.1",
+    "prepare:data": "node scripts/generate-report-data.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

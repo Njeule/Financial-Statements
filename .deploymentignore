@@ -1,0 +1,6 @@
+Transactions.csv
+ChartOfAccounts.csv
+docs/
+scripts/
+package.json
+.deploymentignore
