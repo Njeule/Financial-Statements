@@ -483,9 +483,9 @@ function pageNarrative(view, rows) {
       "Click an account bar to inspect its journal support."
     ],
     ledger: [
-      `${m.lines} published ledger rows are visible under the current filters.`,
-      state.controls ? "The ledger explorer uses deployment-safe month/account/type summary rows." : "The ledger explorer is the audit trail behind every chart and statement.",
-      "Export the filtered set when a working-paper extract is needed."
+      `${m.lines} report rows are visible under the current filters.`,
+      state.controls ? "The ledger explorer shows monthly account summaries created from the uploaded files." : "The ledger explorer is the audit trail behind every chart and statement.",
+      "Download the filtered set when a working-paper extract is needed."
     ]
   }[view];
 
@@ -510,8 +510,8 @@ function reconciliationPanel() {
       <div><span>Total credits</span><strong>${fmtMoney(checks.credits)}</strong></div>
       <div><span>Net ledger total</span><strong>${fmtMoney(checks.ledgerTotal)}</strong></div>
       <div><span>Balanced entries</span><strong>${checks.balanced}/${checks.totalTransactions}</strong></div>
-      <div><span>Source lines</span><strong>${checks.lines}</strong></div>
-      <div><span>Published rows</span><strong>${checks.publishedLines ?? checks.lines}</strong></div>
+      <div><span>Transaction lines</span><strong>${checks.lines}</strong></div>
+      <div><span>Report rows</span><strong>${checks.publishedLines ?? checks.lines}</strong></div>
       <div><span>Active accounts</span><strong>${checks.usedAccounts}/${checks.accounts}</strong></div>
       <div><span>Inactive accounts</span><strong>${checks.inactiveAccounts}</strong></div>
       <div><span>Date coverage</span><strong>${dateIso(checks.firstDate)} to ${dateIso(checks.lastDate)}</strong></div>
@@ -653,7 +653,7 @@ function buildReportDataFromCsv(accountsRaw, transactionsRaw) {
       accountNumber: row.accountNumber,
       type: row.type,
       amount: Number(row.amount.toFixed(2)),
-      description: `${readableMonth(row.month)} summarized ${row.type.toLowerCase()}s for ${accountMap.get(row.accountNumber)?.accountName ?? row.accountNumber} (${row.sourceLineCount} source lines)`,
+      description: `${readableMonth(row.month)} summarized ${row.type.toLowerCase()}s for ${accountMap.get(row.accountNumber)?.accountName ?? row.accountNumber} (${row.sourceLineCount} transactions)`,
       sourceLineCount: row.sourceLineCount
     }));
   const dates = sourceLedger.map((row) => row.date).sort((a, b) => a - b);
@@ -907,14 +907,14 @@ function header() {
       ${activeFilterChips()}
       <section class="upload-panel" data-upload-panel ${state.uploadOpen ? "" : "hidden"}>
         <div>
-          <strong>Refresh report from CSV files</strong>
-          <p>Select both source files. The report refreshes in this browser and can export a sanitized report-data.json for deployment.</p>
+          <strong>Refresh report from your CSV files</strong>
+          <p>Select both CSV files, then generate a fresh report. You can also download a reusable report file after reviewing the results.</p>
           ${state.uploadError ? `<p class="upload-error">${escapeHtml(state.uploadError)}</p>` : ""}
         </div>
         <label>Chart of Accounts CSV<input type="file" data-coa-file accept=".csv,text/csv"></label>
         <label>Transactions CSV<input type="file" data-transactions-file accept=".csv,text/csv"></label>
         <button class="download-button" data-refresh-from-upload>Generate report</button>
-        <button class="download-button secondary" data-export-report-data>Export report-data.json</button>
+        <button class="download-button secondary" data-export-report-data>Download report file</button>
         <div class="example-actions">
           <button data-load-example="simple">Load Example Dataset 1</button>
           <button data-load-example="rich">Load Example Dataset 2</button>
@@ -1150,10 +1150,10 @@ function enhancedDrilldown(rows) {
     <div class="section-title">
       <div>
         <h2>${escapeHtml(state.drillTarget?.label ?? "Transaction Drilldown")}</h2>
-        <p>${allDrillRows.length} published rows tie to the current selection</p>
+        <p>${allDrillRows.length} report rows tie to the current selection</p>
       </div>
       <div class="inline-actions">
-        ${state.drillTarget ? `<button class="download-button small" data-export-drill>${icon("download")} Export selection</button><button class="icon-button" data-clear-drill title="Clear drilldown">${icon("reset")}</button>` : ""}
+        ${state.drillTarget ? `<button class="download-button small" data-export-drill>${icon("download")} Download selection</button><button class="icon-button" data-clear-drill title="Clear drilldown">${icon("reset")}</button>` : ""}
       </div>
     </div>
     <div class="drill-summary">
@@ -1379,7 +1379,7 @@ function emptyState() {
   return `<main>
     <section class="empty-report">
       <strong>Upload CSVs to generate the financial statements</strong>
-      <p>No default figures are loaded. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
+      <p>No report data is loaded yet. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
       <div class="empty-actions">
         <button class="download-button" data-empty-upload>${icon("download")} Upload your CSVs</button>
         <button class="download-button secondary" data-load-example="simple">Load Example Dataset 1</button>
@@ -1388,7 +1388,7 @@ function emptyState() {
       <div class="empty-steps">
         <div><span>1</span><p>Upload your own files or load an example dataset.</p></div>
         <div><span>2</span><p>Use either example dataset to explore the same upload format.</p></div>
-        <div><span>3</span><p>Generate the report. Uploaded data is processed in this browser session.</p></div>
+        <div><span>3</span><p>Generate the report. Uploaded data is processed only on this page.</p></div>
       </div>
     </section>
   </main>`;
@@ -1410,7 +1410,7 @@ function body(rows) {
 
   return `<main>
     <section class="kpis">
-      ${kpi("Revenue", fmtMoney(m.revenue), `${m.transactions} source journal entries`, "good")}
+      ${kpi("Revenue", fmtMoney(m.revenue), `${m.transactions} journal entries`, "good")}
       ${kpi("Gross Profit", fmtMoney(m.grossProfit), `${pct.format(m.grossMargin)} gross margin`, "neutral")}
       ${kpi("Operating Result", fmtMoney(m.ebit), `${pct.format(m.ebitMargin)} operating margin`, m.ebit >= 0 ? "good" : "bad")}
       ${kpi("Current Ratio", m.currentRatio.toFixed(2), `${fmtMoney(m.workingCapital)} working capital`, m.currentRatio >= 1.2 ? "good" : "warn")}
@@ -1419,9 +1419,9 @@ function body(rows) {
       <span>Integrity</span>
       <strong>${checks.balanced}/${checks.totalTransactions}</strong> balanced entries
       <strong>${checks.usedAccounts}</strong> active accounts
-      <strong>${checks.lines}</strong> source lines
-      ${state.controls ? `<strong>${checks.publishedLines}</strong> published rows` : ""}
-      <button class="download-button" data-export>${icon("download")} Export filtered ledger</button>
+      <strong>${checks.lines}</strong> transaction lines
+      ${state.controls ? `<strong>${checks.publishedLines}</strong> report rows` : ""}
+      <button class="download-button" data-export>${icon("download")} Download filtered ledger</button>
     </section>
     ${content}
   </main>`;
@@ -1545,7 +1545,7 @@ async function loadExample(kind) {
 }
 
 function downloadRows(rows, filename) {
-  const headers = ["Date", "PublishedID", "AccountNumber", "AccountName", "Category", "ActivitySummary", "Amount"];
+  const headers = ["Date", "ReportRowID", "AccountNumber", "AccountName", "Category", "ActivitySummary", "Amount"];
   const csv = [
     headers.join(","),
     ...rows.map((row) =>

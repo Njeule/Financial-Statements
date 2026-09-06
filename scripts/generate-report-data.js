@@ -113,7 +113,7 @@ const summarizedLedger = Array.from(summary.values())
     accountNumber: row.accountNumber,
     type: row.type,
     amount: Number(row.amount.toFixed(2)),
-    description: `${readableMonth(row.month)} summarized ${row.type.toLowerCase()}s for ${accountMap.get(row.accountNumber)?.accountName ?? row.accountNumber} (${row.sourceLineCount} source lines)`,
+    description: `${readableMonth(row.month)} summarized ${row.type.toLowerCase()}s for ${accountMap.get(row.accountNumber)?.accountName ?? row.accountNumber} (${row.sourceLineCount} transactions)`,
     sourceLineCount: row.sourceLineCount
   }));
 
