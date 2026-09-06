@@ -353,6 +353,15 @@ function monthLabel(month) {
   return month ? month : "n/a";
 }
 
+function reportSubtitle() {
+  if (!state.dataLoaded) return "Interactive financial statements reporting pack";
+  const checks = integrityChecks();
+  const start = checks.firstDate?.getFullYear?.();
+  const end = checks.lastDate?.getFullYear?.();
+  const yearLabel = start && end ? (start === end ? String(start) : `${start}-${end}`) : "current";
+  return `Interactive ${yearLabel} financial statements reporting pack`;
+}
+
 function monthlyVariance(rows) {
   const series = monthlySeries(rows);
   const revenueMonths = series.filter((row) => row.revenue);
@@ -861,7 +870,7 @@ function header() {
         <span class="brand-mark">FS</span>
         <div>
           <h1>CFO Financial Statements</h1>
-          <p>Interactive 2025 GL reporting pack</p>
+          <p>${escapeHtml(reportSubtitle())}</p>
         </div>
       </div>
       <nav class="tabs">
@@ -895,6 +904,10 @@ function header() {
         <label>Transactions CSV<input type="file" data-transactions-file accept=".csv,text/csv"></label>
         <button class="download-button" data-refresh-from-upload>Generate report</button>
         <button class="download-button secondary" data-export-report-data>Export report-data.json</button>
+        <div class="example-actions">
+          <button data-load-example="simple">Use simple example</button>
+          <button data-load-example="rich">Use rich example</button>
+        </div>
       </section>
     </header>`;
 }
@@ -1355,7 +1368,12 @@ function emptyState() {
   return `<main>
     <section class="empty-report">
       <strong>Upload CSVs to generate the financial statements</strong>
-      <p>No default figures are loaded. Select the chart of accounts and transaction CSV files, then click Generate report.</p>
+      <p>No default figures are loaded. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
+      <div class="empty-actions">
+        <button class="download-button" data-empty-upload>${icon("download")} Upload your CSVs</button>
+        <button class="download-button secondary" data-load-example="simple">Use simple example</button>
+        <button class="download-button secondary" data-load-example="rich">Use rich example</button>
+      </div>
       <div class="empty-steps">
         <div><span>1</span><p>Open Upload CSVs in the header.</p></div>
         <div><span>2</span><p>Select ChartOfAccounts.csv and Transactions.csv.</p></div>
@@ -1488,6 +1506,33 @@ async function refreshFromUpload() {
   }
 }
 
+async function loadExample(kind) {
+  try {
+    state.uploadError = "";
+    const files =
+      kind === "rich"
+        ? ["./Test_ChartOfAccounts.csv", "./Test_Transactions.csv"]
+        : ["./ChartOfAccounts.csv", "./Transactions.csv"];
+    const [accountsRaw, transactionsRaw] = await Promise.all(
+      files.map((file) =>
+        fetch(file, { cache: "no-store" }).then((response) => {
+          if (!response.ok) throw new Error(`Could not load ${file}.`);
+          return response.text();
+        })
+      )
+    );
+    const reportData = buildReportDataFromCsv(accountsRaw, transactionsRaw);
+    loadReportData(reportData);
+    resetViewState();
+    state.uploadOpen = false;
+    render();
+  } catch (error) {
+    state.uploadError = error.message;
+    state.uploadOpen = true;
+    render();
+  }
+}
+
 function downloadRows(rows, filename) {
   const headers = ["Date", "PublishedID", "AccountNumber", "AccountName", "Category", "ActivitySummary", "Amount"];
   const csv = [
@@ -1545,6 +1590,13 @@ function bindEvents() {
   document.querySelector("[data-upload-toggle]")?.addEventListener("click", () => {
     state.uploadOpen = !state.uploadOpen;
     render();
+  });
+  document.querySelector("[data-empty-upload]")?.addEventListener("click", () => {
+    state.uploadOpen = true;
+    render();
+  });
+  document.querySelectorAll("[data-load-example]").forEach((button) => {
+    button.addEventListener("click", () => loadExample(button.dataset.loadExample));
   });
   document.querySelector("[data-coa-file]")?.addEventListener("change", async (event) => {
     state.uploadedFiles.accountsRaw = await readUpload(event.target);

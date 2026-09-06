@@ -219,12 +219,34 @@ p {
 .upload-panel {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.35fr) minmax(220px, 0.35fr) auto auto;
+  grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.35fr) minmax(220px, 0.35fr) auto auto minmax(230px, auto);
   align-items: end;
   gap: 12px;
   border-top: 1px solid #d9e1ea;
   background: #ffffff;
   padding: 12px 18px;
+}
+
+.example-actions,
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.example-actions button {
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  padding: 0 10px;
+}
+
+.example-actions button:hover,
+.empty-actions button:hover {
+  border-color: #0f8b8d;
+  box-shadow: 0 0 0 3px rgba(15, 139, 141, 0.12);
 }
 
 .upload-panel[hidden] {
@@ -982,6 +1004,10 @@ td span {
   line-height: 1.5;
 }
 
+.empty-actions {
+  margin: 4px 0 6px;
+}
+
 .empty-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1090,6 +1116,10 @@ td span {
   }
 
   .empty-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-panel {
     grid-template-columns: 1fr;
   }
 }
