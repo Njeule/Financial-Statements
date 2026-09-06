@@ -377,6 +377,11 @@ p {
   font-weight: 800;
 }
 
+.upload-notice {
+  color: #0f8b8d !important;
+  font-weight: 800;
+}
+
 .download-button.secondary {
   border-color: #cbd5e1;
   background: #ffffff;

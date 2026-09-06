@@ -78,6 +78,7 @@ function returnHome() {
   state.dataLoaded = false;
   state.uploadOpen = true;
   state.uploadError = "";
+  state.uploadNotice = "";
   clearUploadedFiles();
   render();
 }
@@ -126,6 +127,7 @@ const state = {
   controls: null,
   dataMode: "csv",
   uploadError: "",
+  uploadNotice: "",
   uploadOpen: true,
   dataLoaded: false,
   uploadedFiles: {
@@ -181,6 +183,29 @@ function parseCsv(raw) {
 function parseObjects(raw) {
   const [headers, ...rows] = parseCsv(raw);
   return rows.map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""])));
+}
+
+const ACCOUNT_COLUMNS = ["AccountKey", "AccountNumber", "AccountName", "Category_L1", "Subcategory_L2", "DetailGroup_L3", "Region", "Department"];
+const TRANSACTION_COLUMNS = ["TransactionID", "Date", "AccountNumber", "Description", "Amount", "Type"];
+
+function csvHeaders(raw) {
+  const [headers = []] = parseCsv(raw);
+  return new Set(headers.map((header) => header.trim()));
+}
+
+function hasRequiredColumns(headers, columns) {
+  return columns.every((column) => headers.has(column));
+}
+
+function detectCsvKind(raw) {
+  const headers = csvHeaders(raw);
+  if (hasRequiredColumns(headers, ACCOUNT_COLUMNS)) return "accounts";
+  if (hasRequiredColumns(headers, TRANSACTION_COLUMNS)) return "transactions";
+  return "";
+}
+
+function csvKindLabel(kind) {
+  return kind === "accounts" ? "Chart of Accounts CSV" : "Transactions CSV";
 }
 
 function parseDate(value) {
@@ -605,7 +630,7 @@ function readableMonth(month) {
 function requireColumns(rows, columns, fileName) {
   if (!rows.length) throw new Error(`${fileName} is empty.`);
   const missing = columns.filter((column) => !(column in rows[0]));
-  if (missing.length) throw new Error(`${fileName} is missing required columns: ${missing.join(", ")}`);
+  if (missing.length) throw new Error(`${fileName} does not match the required format. Missing columns: ${missing.join(", ")}`);
 }
 
 function buildReportDataFromCsv(accountsRaw, transactionsRaw) {
@@ -613,10 +638,10 @@ function buildReportDataFromCsv(accountsRaw, transactionsRaw) {
   const transactionRows = parseObjects(transactionsRaw);
   requireColumns(
     accountRows,
-    ["AccountKey", "AccountNumber", "AccountName", "Category_L1", "Subcategory_L2", "DetailGroup_L3", "Region", "Department"],
+    ACCOUNT_COLUMNS,
     "ChartOfAccounts.csv"
   );
-  requireColumns(transactionRows, ["TransactionID", "Date", "AccountNumber", "Description", "Amount", "Type"], "Transactions.csv");
+  requireColumns(transactionRows, TRANSACTION_COLUMNS, "Transactions.csv");
 
   const accounts = accountRows.map((row) => ({
     accountKey: row.AccountKey,
@@ -946,6 +971,7 @@ function header() {
           <strong>Refresh report from your CSV files</strong>
           <p>Select both CSV files in either order, then generate a fresh report. You can also download a reusable report file after reviewing the results.</p>
           ${state.uploadError ? `<p class="upload-error">${escapeHtml(state.uploadError)}</p>` : ""}
+          ${state.uploadNotice ? `<p class="upload-notice">${escapeHtml(state.uploadNotice)}</p>` : ""}
         </div>
         ${uploadPicker("accounts", "Chart of Accounts CSV")}
         ${uploadPicker("transactions", "Transactions CSV")}
@@ -1417,6 +1443,7 @@ function emptyState() {
       <strong>Upload CSVs to generate the financial statements</strong>
       <p>No report data is loaded yet. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
       ${state.uploadError ? `<p class="upload-error">${escapeHtml(state.uploadError)}</p>` : ""}
+      ${state.uploadNotice ? `<p class="upload-notice">${escapeHtml(state.uploadNotice)}</p>` : ""}
       <div class="empty-upload-grid">
         ${uploadPicker("accounts", "Chart of Accounts CSV")}
         ${uploadPicker("transactions", "Transactions CSV")}
@@ -1532,22 +1559,31 @@ function currentReportData() {
   };
 }
 
-async function readUpload(input, kind) {
+async function readUpload(input, requestedKind) {
   const file = input.files?.[0];
   if (!file) return;
   const raw = await file.text();
-  if (kind === "accounts") {
+  const detectedKind = detectCsvKind(raw);
+  if (!detectedKind) {
+    throw new Error(`${file.name} does not look like a Chart of Accounts CSV or Transactions CSV.`);
+  }
+  if (detectedKind === "accounts") {
     state.uploadedFiles.accountsRaw = raw;
     state.uploadedFiles.accountsName = file.name;
   } else {
     state.uploadedFiles.transactionsRaw = raw;
     state.uploadedFiles.transactionsName = file.name;
   }
+  state.uploadNotice =
+    detectedKind === requestedKind
+      ? ""
+      : `${file.name} looks like the ${csvKindLabel(detectedKind)}, so it was placed in the correct slot.`;
 }
 
 async function refreshFromUpload() {
   try {
     state.uploadError = "";
+    state.uploadNotice = "";
     const accountsRaw = state.uploadedFiles.accountsRaw;
     const transactionsRaw = state.uploadedFiles.transactionsRaw;
     if (!accountsRaw || !transactionsRaw) {
@@ -1571,6 +1607,7 @@ async function refreshFromUpload() {
 async function loadExample(kind) {
   try {
     state.uploadError = "";
+    state.uploadNotice = "";
     const files =
       kind === "rich"
         ? ["./Test_ChartOfAccounts.csv", "./Test_Transactions.csv"]
@@ -1668,13 +1705,23 @@ function bindEvents() {
     button.addEventListener("click", () => loadExample(button.dataset.loadExample));
   });
   document.querySelectorAll("[data-coa-file]").forEach((input) => input.addEventListener("change", async (event) => {
-    await readUpload(event.target, "accounts");
-    state.uploadError = "";
+    try {
+      await readUpload(event.target, "accounts");
+      state.uploadError = "";
+    } catch (error) {
+      state.uploadError = error.message;
+      state.uploadNotice = "";
+    }
     render();
   }));
   document.querySelectorAll("[data-transactions-file]").forEach((input) => input.addEventListener("change", async (event) => {
-    await readUpload(event.target, "transactions");
-    state.uploadError = "";
+    try {
+      await readUpload(event.target, "transactions");
+      state.uploadError = "";
+    } catch (error) {
+      state.uploadError = error.message;
+      state.uploadNotice = "";
+    }
     render();
   }));
   document.querySelectorAll("[data-refresh-from-upload]").forEach((button) => {
