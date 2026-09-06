@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "python -m http.server 5173 --bind 127.0.0.1",
-    "prepare:data": "node scripts/generate-report-data.js"
+    "prepare:data": "node scripts/generate-report-data.js",
+    "generate:test-data": "node scripts/generate-test-csvs.js"
   },
   "dependencies": {},
   "devDependencies": {}

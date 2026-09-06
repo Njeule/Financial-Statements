@@ -218,11 +218,13 @@ function metrics(rows) {
   const cogs = sum((row) => row.subcategory === "Cost of Goods Sold");
   const grossProfit = revenue - cogs;
   const opex = sum((row) => row.subcategory === "Operating Expenses");
+  const totalExpenses = sum((row) => row.category === "Expenses");
   const ebit = grossProfit - opex;
+  const netResult = revenue - totalExpenses;
   const assets = sum((row) => row.category === "Assets");
   const liabilities = sum((row) => row.category === "Liabilities");
   const reportedEquity = sum((row) => row.category === "Equity");
-  const currentYearEarnings = ebit;
+  const currentYearEarnings = netResult;
   const equity = reportedEquity + currentYearEarnings;
   const cash = sum((row) => row.detailGroup === "Cash & Cash Equivalents");
   return {
@@ -231,7 +233,9 @@ function metrics(rows) {
     grossProfit,
     grossMargin: revenue ? grossProfit / revenue : 0,
     opex,
+    totalExpenses,
     ebit,
+    netResult,
     ebitMargin: revenue ? ebit / revenue : 0,
     assets,
     liabilities,
@@ -440,7 +444,7 @@ function pageNarrative(view, rows) {
     ],
     balance: [
       `Assets are ${fmtMoney(m.assets)} and balance against liabilities plus adjusted equity of ${fmtMoney(m.liabilities + m.equity)}.`,
-      `Equity includes current-year earnings/loss of ${fmtMoney(m.currentYearEarnings)} so the statement balances.`,
+      `Equity includes current-year net earnings/loss of ${fmtMoney(m.currentYearEarnings)} so the statement balances.`,
       `Current ratio is ${m.currentRatio.toFixed(2)} and debt-to-equity is ${m.debtToEquity.toFixed(2)}.`
     ],
     cash: [
