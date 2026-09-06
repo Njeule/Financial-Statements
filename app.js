@@ -50,18 +50,23 @@ function resetViewState() {
   state.view = "overview";
 }
 
-function focusUploadPanel(openPicker = false) {
+function clearUploadedFiles() {
+  state.uploadedFiles = {
+    accountsRaw: "",
+    accountsName: "",
+    transactionsRaw: "",
+    transactionsName: ""
+  };
+}
+
+function focusUploadPanel() {
   state.uploadOpen = true;
   render();
   window.setTimeout(() => {
     const panel = document.querySelector("[data-upload-panel]");
     const input = document.querySelector("[data-coa-file]");
     panel?.scrollIntoView({ behavior: "smooth", block: "start" });
-    if (openPicker && input) {
-      input.click();
-    } else {
-      input?.focus();
-    }
+    input?.focus();
   }, 0);
 }
 
@@ -73,6 +78,7 @@ function returnHome() {
   state.dataLoaded = false;
   state.uploadOpen = true;
   state.uploadError = "";
+  clearUploadedFiles();
   render();
 }
 
@@ -124,7 +130,9 @@ const state = {
   dataLoaded: false,
   uploadedFiles: {
     accountsRaw: "",
-    transactionsRaw: ""
+    accountsName: "",
+    transactionsRaw: "",
+    transactionsName: ""
   },
   options: {
     months: [],
@@ -889,6 +897,19 @@ function activeFilterChips() {
   </div>`;
 }
 
+function uploadPicker(kind, label) {
+  const fileName =
+    kind === "accounts" ? state.uploadedFiles.accountsName : state.uploadedFiles.transactionsName;
+  const dataAttr = kind === "accounts" ? "data-coa-file" : "data-transactions-file";
+  return `
+    <label class="file-picker ${fileName ? "ready" : ""}">
+      <span>${label}</span>
+      <input type="file" ${dataAttr} accept=".csv,text/csv">
+      <b>Choose file</b>
+      <em>${fileName ? escapeHtml(fileName) : "No file selected"}</em>
+    </label>`;
+}
+
 function header() {
   return `
     <header class="top">
@@ -923,11 +944,11 @@ function header() {
       <section class="upload-panel" data-upload-panel ${state.uploadOpen ? "" : "hidden"}>
         <div>
           <strong>Refresh report from your CSV files</strong>
-          <p>Select both CSV files, then generate a fresh report. You can also download a reusable report file after reviewing the results.</p>
+          <p>Select both CSV files in either order, then generate a fresh report. You can also download a reusable report file after reviewing the results.</p>
           ${state.uploadError ? `<p class="upload-error">${escapeHtml(state.uploadError)}</p>` : ""}
         </div>
-        <label>Chart of Accounts CSV<input type="file" data-coa-file accept=".csv,text/csv"></label>
-        <label>Transactions CSV<input type="file" data-transactions-file accept=".csv,text/csv"></label>
+        ${uploadPicker("accounts", "Chart of Accounts CSV")}
+        ${uploadPicker("transactions", "Transactions CSV")}
         <button class="download-button" data-refresh-from-upload>Generate report</button>
         <button class="download-button secondary" data-export-report-data>Download report file</button>
         <div class="example-actions">
@@ -1395,13 +1416,18 @@ function emptyState() {
     <section class="empty-report">
       <strong>Upload CSVs to generate the financial statements</strong>
       <p>No report data is loaded yet. Select your own CSV files, or use one of the example datasets to explore the dashboard.</p>
+      ${state.uploadError ? `<p class="upload-error">${escapeHtml(state.uploadError)}</p>` : ""}
+      <div class="empty-upload-grid">
+        ${uploadPicker("accounts", "Chart of Accounts CSV")}
+        ${uploadPicker("transactions", "Transactions CSV")}
+      </div>
       <div class="empty-actions">
-        <button class="download-button" data-empty-upload>${icon("download")} Upload your CSVs</button>
+        <button class="download-button" data-refresh-from-upload>Generate report</button>
         <button class="example-btn example-one" data-load-example="simple"><strong>Load Example Dataset 1</strong><span>Basic sample</span></button>
         <button class="example-btn example-two" data-load-example="rich"><strong>Load Example Dataset 2</strong><span>Expanded sample</span></button>
       </div>
       <div class="empty-steps">
-        <div><span>1</span><p>Upload your own files or load an example dataset.</p></div>
+        <div><span>1</span><p>Choose the Chart of Accounts CSV and Transactions CSV in either order.</p></div>
         <div><span>2</span><p>Use either example dataset to explore the same upload format.</p></div>
         <div><span>3</span><p>Generate the report. Uploaded data is processed only on this page.</p></div>
       </div>
@@ -1506,10 +1532,17 @@ function currentReportData() {
   };
 }
 
-async function readUpload(input) {
+async function readUpload(input, kind) {
   const file = input.files?.[0];
-  if (!file) return "";
-  return file.text();
+  if (!file) return;
+  const raw = await file.text();
+  if (kind === "accounts") {
+    state.uploadedFiles.accountsRaw = raw;
+    state.uploadedFiles.accountsName = file.name;
+  } else {
+    state.uploadedFiles.transactionsRaw = raw;
+    state.uploadedFiles.transactionsName = file.name;
+  }
 }
 
 async function refreshFromUpload() {
@@ -1518,7 +1551,10 @@ async function refreshFromUpload() {
     const accountsRaw = state.uploadedFiles.accountsRaw;
     const transactionsRaw = state.uploadedFiles.transactionsRaw;
     if (!accountsRaw || !transactionsRaw) {
-      throw new Error("Please choose both ChartOfAccounts.csv and Transactions.csv.");
+      const missing = [];
+      if (!accountsRaw) missing.push("Chart of Accounts CSV");
+      if (!transactionsRaw) missing.push("Transactions CSV");
+      throw new Error(`Please choose ${missing.join(" and ")} before generating the report.`);
     }
     const reportData = buildReportDataFromCsv(accountsRaw, transactionsRaw);
     loadReportData(reportData);
@@ -1547,6 +1583,12 @@ async function loadExample(kind) {
         })
       )
     );
+    state.uploadedFiles = {
+      accountsRaw,
+      accountsName: files[0].replace("./", ""),
+      transactionsRaw,
+      transactionsName: files[1].replace("./", "")
+    };
     const reportData = buildReportDataFromCsv(accountsRaw, transactionsRaw);
     loadReportData(reportData);
     resetViewState();
@@ -1622,21 +1664,22 @@ function bindEvents() {
       focusUploadPanel(false);
     }
   });
-  document.querySelector("[data-empty-upload]")?.addEventListener("click", () => {
-    focusUploadPanel(true);
-  });
   document.querySelectorAll("[data-load-example]").forEach((button) => {
     button.addEventListener("click", () => loadExample(button.dataset.loadExample));
   });
-  document.querySelector("[data-coa-file]")?.addEventListener("change", async (event) => {
-    state.uploadedFiles.accountsRaw = await readUpload(event.target);
+  document.querySelectorAll("[data-coa-file]").forEach((input) => input.addEventListener("change", async (event) => {
+    await readUpload(event.target, "accounts");
     state.uploadError = "";
-  });
-  document.querySelector("[data-transactions-file]")?.addEventListener("change", async (event) => {
-    state.uploadedFiles.transactionsRaw = await readUpload(event.target);
+    render();
+  }));
+  document.querySelectorAll("[data-transactions-file]").forEach((input) => input.addEventListener("change", async (event) => {
+    await readUpload(event.target, "transactions");
     state.uploadError = "";
+    render();
+  }));
+  document.querySelectorAll("[data-refresh-from-upload]").forEach((button) => {
+    button.addEventListener("click", refreshFromUpload);
   });
-  document.querySelector("[data-refresh-from-upload]")?.addEventListener("click", refreshFromUpload);
   document.querySelector("[data-export-report-data]")?.addEventListener("click", () => downloadJson(currentReportData(), "report-data.json"));
   document.querySelector("[data-clear-search]")?.addEventListener("click", () => {
     state.filters.search = "";
